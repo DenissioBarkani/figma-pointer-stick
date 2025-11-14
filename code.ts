@@ -450,6 +450,14 @@ figma.ui.onmessage = async (msg) => {
       }
       break;
       
+    case "resize-ui":
+      try {
+        figma.ui.resize(msg.width, msg.height);
+      } catch (error) {
+        console.error("Ошибка изменения размера UI:", error);
+      }
+      break;
+      
     case "cancel":
       figma.closePlugin();
       break;

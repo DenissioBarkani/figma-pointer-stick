@@ -152,62 +152,6 @@ function createShakeAnimation(node) {
     // Создаём варианты с небольшими смещениями
     figma.notify("Анимация Shake: используйте Smart Animate в Prototype");
 }
-// Создание искорок в верхней части указки
-function createSparklesOnPointer(node) {
-    try {
-        if (node.type !== "COMPONENT" && node.type !== "FRAME" && node.type !== "INSTANCE") {
-            return;
-        }
-        const frame = node;
-        const rotation = frame.rotation || 0;
-        const width = frame.width;
-        const height = frame.height;
-        const centerX = frame.x + width / 2;
-        const centerY = frame.y + height / 2;
-        // Вычисляем позицию верхней части указки с учетом поворота
-        // Локальная позиция верхней части относительно центра элемента
-        const cos = Math.cos(rotation);
-        const sin = Math.sin(rotation);
-        const sparkles = [];
-        const sparkleCount = 10;
-        const spreadWidth = width * 0.6; // Ширина разброса искорок
-        // Создаем искорки в верхней части указки
-        for (let i = 0; i < sparkleCount; i++) {
-            const sparkle = figma.createEllipse();
-            sparkle.name = "Sparkle";
-            sparkle.resize(8, 8);
-            // Распределяем искорки горизонтально в верхней части
-            // Локальная позиция относительно центра элемента
-            const localX = (i / (sparkleCount - 1) - 0.5) * spreadWidth; // От -spreadWidth/2 до +spreadWidth/2
-            const localY = -height / 2 - 10; // Верхняя часть с небольшим отступом вверх
-            // Поворачиваем локальные координаты с учетом поворота элемента
-            const rotatedX = localX * cos - localY * sin;
-            const rotatedY = localX * sin + localY * cos;
-            // Глобальная позиция искорки
-            sparkle.x = centerX + rotatedX - 4;
-            sparkle.y = centerY + rotatedY - 4;
-            // Белый цвет с прозрачностью
-            sparkle.fills = [{
-                    type: "SOLID",
-                    color: { r: 1, g: 1, b: 1 },
-                    opacity: 0.9
-                }];
-            figma.currentPage.appendChild(sparkle);
-            sparkles.push(sparkle);
-        }
-        // Удаляем искорки через 300ms
-        setTimeout(() => {
-            sparkles.forEach(sparkle => {
-                if (!sparkle.removed) {
-                    sparkle.remove();
-                }
-            });
-        }, 300);
-    }
-    catch (error) {
-        console.error("Ошибка создания искорок:", error);
-    }
-}
 // Анимация клика (scale 0.9 → 1.1 → 1.0) - быстрая
 function playClickAnimation() {
     try {
@@ -233,9 +177,6 @@ function playClickAnimation() {
         const originalHeight = frame.height;
         const originalX = frame.x;
         const originalY = frame.y;
-        const originalRotation = frame.rotation;
-        // Создаем искорки в верхней части указки
-        createSparklesOnPointer(node);
         // Отправляем команду в UI для анимации с задержками
         figma.ui.postMessage({
             type: 'animate-click',
@@ -243,8 +184,7 @@ function playClickAnimation() {
             originalWidth,
             originalHeight,
             originalX,
-            originalY,
-            originalRotation
+            originalY
         });
     }
     catch (error) {
@@ -456,6 +396,14 @@ figma.ui.onmessage = async (msg) => {
             }
             catch (error) {
                 console.error("Ошибка изменения вращения:", error);
+            }
+            break;
+        case "resize-ui":
+            try {
+                figma.ui.resize(msg.width, msg.height);
+            }
+            catch (error) {
+                console.error("Ошибка изменения размера UI:", error);
             }
             break;
         case "cancel":

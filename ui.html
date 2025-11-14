@@ -13,15 +13,21 @@
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 12px;
-      padding: 12px;
+      padding: 8px 12px;
       padding-bottom: 8px;
       background: #fafafa;
       color: #1a1a1a;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      min-height: 100vh;
       box-sizing: border-box;
+      position: relative;
+    }
+    
+    body.collapsed {
+      height: 150px;
+      min-height: 150px;
     }
 
     h2 {
@@ -70,6 +76,8 @@
       font-weight: 600;
       margin-bottom: 0;
       flex: 1;
+      height: 100px;
+      min-height: 100px;
       background: linear-gradient(135deg, #18a0fb 0%, #0d8ce8 100%);
       box-shadow: 0 2px 8px rgba(24, 160, 251, 0.25);
     }
@@ -230,9 +238,51 @@
       flex-direction: column;
       margin-bottom: 0;
     }
+    .collapse-button {
+      width: 100%;
+      height: 16px;
+      padding: 0;
+      background: #e5e5e5;
+      border: none;
+      cursor: pointer;
+      font-size: 9px;
+      color: #666666;
+      text-align: center;
+      border-radius: 2px;
+      transition: all 0.15s ease;
+      margin-top: 5px;
+      margin-bottom: 8px;
+      line-height: 16px;
+      font-weight: 500;
+    }
+
+    .collapse-button:hover {
+      background: #d0d0d0;
+      color: #333333;
+    }
+
+    .collapsed .section-secondary {
+      display: none;
+    }
+
+    .collapsed .section-main {
+      margin-bottom: 0;
+    }
   </style>
 </head>
 <body>
+
+  <!-- Кнопка сворачивания -->
+  <button class="collapse-button" id="collapse-btn">Свернуть</button>
+
+  <!-- Загрузка изображения -->
+  <div class="section-secondary">
+    <label for="pointer-upload" class="file-label">
+      Загрузить изображение (PNG)
+    </label>
+    <input type="file" id="pointer-upload" accept="image/png" />
+    <div class="file-info" id="pointer-info">Нет изображения</div>
+  </div>
 
   <!-- Загрузка звука -->
   <div class="section-secondary">
@@ -242,21 +292,18 @@
     <input type="file" id="sound-upload" accept="audio/mp3,audio/wav,audio/mpeg" />
     <div class="file-info" id="sound-info">Встроенный звук загружен</div>
     <div style="margin-top: 10px;">
-      <label for="volume-control" style="display: block; font-size: 11px; color: #666666; margin-bottom: 6px; font-weight: 500;">Громкость:</label>
-      <input type="range" id="volume-control" min="0" max="100" value="100" style="width: 100%;" />
-      <div style="font-size: 10px; color: #666666; text-align: center; margin-top: 4px; font-weight: 500;">
-        <span id="volume-value">100%</span>
+      <input type="range" id="volume-control" min="0" max="100" value="100" style="width: 100%; margin-bottom: 4px;" />
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <label for="volume-control" style="font-size: 10px; color: #666666; font-weight: 500; margin: 0;">Громкость:</label>
+        <div style="font-size: 10px; color: #666666; font-weight: 500; margin: 0;">
+          <span id="volume-value">100%</span>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Добавление указки -->
   <div class="section-secondary">
-    <label for="pointer-upload" class="file-label">
-      Загрузить изображение (PNG)
-    </label>
-    <input type="file" id="pointer-upload" accept="image/png" />
-    <div class="file-info" id="pointer-info">Нет изображения</div>
     <button class="button button-add" id="add-pointer-btn" disabled>Добавить указку</button>
   </div>
 
@@ -277,6 +324,7 @@
     let audioElement = null;
     let pointerAddedToCanvas = false; // Флаг, что указка добавлена на Canvas
     let volumeLevel = 1.0; // Уровень громкости от 0 до 1
+    let isCollapsed = false; // Состояние сворачивания окна
 
     // Загрузка звука
     async function loadSound(bytes) {
@@ -692,6 +740,58 @@
         }
         
         updateClickButtonState();
+        
+        // Если окно свернуто, обновляем размер с учетом надписи
+        if (isCollapsed) {
+          const baseHeight = 150;
+          const additionalHeight = (!hasSelection) ? 20 : 0;
+          window.parent.postMessage({
+            pluginMessage: {
+              type: 'resize-ui',
+              width: 240,
+              height: baseHeight + additionalHeight
+            }
+          }, '*');
+        }
+      }
+    });
+
+    // Кнопка сворачивания
+    document.getElementById('collapse-btn').addEventListener('click', () => {
+      isCollapsed = !isCollapsed;
+      const body = document.body;
+      const collapseBtn = document.getElementById('collapse-btn');
+      
+      if (isCollapsed) {
+        body.classList.add('collapsed');
+        collapseBtn.textContent = 'Развернуть';
+        // Фиксированная высота в свернутом состоянии: 150px
+        // Если показывается надпись "Выберите указку", добавляем 20px
+        const selectionMessage = document.getElementById('selection-message');
+        const baseHeight = 150;
+        const additionalHeight = (selectionMessage && selectionMessage.style.display !== 'none') ? 20 : 0;
+        window.parent.postMessage({
+          pluginMessage: {
+            type: 'resize-ui',
+            width: 240,
+            height: baseHeight + additionalHeight
+          }
+        }, '*');
+      } else {
+        body.classList.remove('collapsed');
+        collapseBtn.textContent = 'Свернуть';
+        // Ждем обновления DOM и вычисляем реальную высоту контента
+        setTimeout(() => {
+          // Используем offsetHeight для получения реальной высоты контента
+          const contentHeight = body.scrollHeight || body.offsetHeight;
+          window.parent.postMessage({
+            pluginMessage: {
+              type: 'resize-ui',
+              width: 240,
+              height: contentHeight
+            }
+          }, '*');
+        }, 50);
       }
     });
 
