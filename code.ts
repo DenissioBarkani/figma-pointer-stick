@@ -24,7 +24,7 @@ const ROTATE_180_CONFIG = {
   duration: 1000 // 1 секунда для полного цикла (180° + -180°)
 };
 
-figma.showUI(__html__, { width: 240, height: 340 });
+figma.showUI(__html__, { width: 240, height: 410 });
 
 // Глобальная переменная для хранения указки
 let pointerNode: SceneNode | null = null;

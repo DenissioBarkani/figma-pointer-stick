@@ -741,18 +741,32 @@
         
         updateClickButtonState();
         
-        // Если окно свернуто, обновляем размер с учетом надписи
-        if (isCollapsed) {
-          const baseHeight = 150;
-          const additionalHeight = (!hasSelection) ? 20 : 0;
-          window.parent.postMessage({
-            pluginMessage: {
-              type: 'resize-ui',
-              width: 240,
-              height: baseHeight + additionalHeight
-            }
-          }, '*');
-        }
+        // Обновляем размер окна с учетом надписи
+        setTimeout(() => {
+          if (isCollapsed) {
+            // Свернутое состояние
+            const baseHeight = 150;
+            const additionalHeight = (!hasSelection) ? 20 : 0;
+            window.parent.postMessage({
+              pluginMessage: {
+                type: 'resize-ui',
+                width: 240,
+                height: baseHeight + additionalHeight
+              }
+            }, '*');
+          } else {
+            // Развернутое состояние
+            const baseHeight = body.scrollHeight || body.offsetHeight;
+            const additionalHeight = (!hasSelection) ? 20 : 0;
+            window.parent.postMessage({
+              pluginMessage: {
+                type: 'resize-ui',
+                width: 240,
+                height: baseHeight + additionalHeight
+              }
+            }, '*');
+          }
+        }, 50);
       }
     });
 
@@ -783,12 +797,15 @@
         // Ждем обновления DOM и вычисляем реальную высоту контента
         setTimeout(() => {
           // Используем offsetHeight для получения реальной высоты контента
-          const contentHeight = body.scrollHeight || body.offsetHeight;
+          const baseHeight = body.scrollHeight || body.offsetHeight;
+          // Если показывается надпись "Выберите указку", добавляем 20px
+          const selectionMessage = document.getElementById('selection-message');
+          const additionalHeight = (selectionMessage && selectionMessage.style.display !== 'none') ? 20 : 0;
           window.parent.postMessage({
             pluginMessage: {
               type: 'resize-ui',
               width: 240,
-              height: contentHeight
+              height: baseHeight + additionalHeight
             }
           }, '*');
         }, 50);
@@ -807,6 +824,19 @@
       if (clickBtn.disabled) {
         selectionMessage.style.display = 'block';
       }
+      
+      // Устанавливаем начальную высоту окна с учетом надписи
+      setTimeout(() => {
+        const baseHeight = body.scrollHeight || body.offsetHeight;
+        const additionalHeight = (selectionMessage && selectionMessage.style.display !== 'none') ? 20 : 0;
+        window.parent.postMessage({
+          pluginMessage: {
+            type: 'resize-ui',
+            width: 240,
+            height: baseHeight + additionalHeight
+          }
+        }, '*');
+      }, 100);
     });
   </script>
 </body>
